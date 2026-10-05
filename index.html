@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoWaste Survey — E-Waste Management Practices</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg:#0f1512;
+  --surface:#161f1a;
+  --surface-2:#1e2b24;
+  --surface-3:#243529;
+  --solder:#2d5f4c;
+  --solder-bright:#3f8a6c;
+  --copper:#c87f4a;
+  --copper-bright:#e0985f;
+  --gold:#d4af37;
+  --ink:#ecece2;
+  --ink-dim:#93a49a;
+  --ink-faint:#5d6d64;
+  --danger:#c4573f;
+  --line:#2a3830;
+  --radius:2px;
+  --mono:'Space Mono', monospace;
+  --sans:'Inter', sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  line-height:1.5;
+  min-height:100vh;
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(45,95,76,0.10), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(200,127,74,0.06), transparent 45%);
+}
+::selection{background:var(--copper); color:#0f1512;}
+
+/* ---------- Circuit trace texture (signature element) ---------- */
+.trace-divider{
+  width:100%; height:34px; overflow:hidden; opacity:0.9;
+}
+.trace-divider svg{width:100%; height:100%; display:block;}
+
+/* ---------- Nav ---------- */
+header{
+  position:sticky; top:0; z-index:50;
+  background:rgba(15,21,18,0.92);
+  backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line);
+}
+.nav-wrap{
+  max-width:1180px; margin:0 auto; padding:14px 20px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.brand{display:flex; align-items:center; gap:10px; font-family:var(--mono); font-weight:700; letter-spacing:0.5px;}
+.brand .chip{
+  width:26px; height:26px; border:1.5px solid var(--solder-bright); border-radius:3px;
+  position:relative; background:var(--surface-2);
+}
+.brand .chip:before, .brand .chip:after{
+  content:''; position:absolute; background:var(--copper); width:5px; height:2px;
+}
+.brand .chip:before{ left:-5px; top:6px; box-shadow:0 8px 0 var(--copper), 0 -0px 0 var(--copper);}
+.brand .chip:after{ right:-5px; top:6px; box-shadow:0 8px 0 var(--copper);}
+.brand-name{font-size:15px; color:var(--ink);}
+.brand-name span{color:var(--copper-bright);}
+nav{display:flex; gap:2px; flex-wrap:wrap;}
+nav button{
+  background:none; border:none; color:var(--ink-dim); font-family:var(--sans); font-weight:500;
+  font-size:13px; padding:8px 12px; cursor:pointer; border-radius:var(--radius); transition:all .15s;
+  letter-spacing:0.2px;
+}
+nav button:hover{ color:var(--ink); background:var(--surface-2); }
+nav button.active{ color:var(--gold); background:var(--surface-2); }
+
+main{max-width:1180px; margin:0 auto; padding:0 20px;}
+.view{display:none; animation:fade .35s ease;}
+.view.active{display:block;}
+@keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+/* ---------- Typography ---------- */
+.eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:2.5px; text-transform:uppercase;
+  color:var(--copper-bright); display:flex; align-items:center; gap:8px; margin-bottom:14px;
+}
+.eyebrow:before{content:''; width:16px; height:1px; background:var(--copper);}
+h1{ font-family:var(--mono); font-weight:700; font-size:clamp(30px,5vw,52px); line-height:1.08; letter-spacing:-0.5px;}
+h1 em{font-style:normal; color:var(--solder-bright);}
+h2{ font-family:var(--mono); font-weight:700; font-size:clamp(22px,3vw,30px); letter-spacing:-0.3px; margin-bottom:6px;}
+h3{ font-family:var(--sans); font-weight:700; font-size:16px; margin-bottom:8px;}
+p{color:var(--ink-dim); font-size:15px;}
+.lede{color:var(--ink-dim); font-size:17px; max-width:600px; margin-top:16px;}
+
+/* ---------- Hero ---------- */
+.hero{ padding:64px 0 40px; display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:center;}
+@media(max-width:860px){ .hero{grid-template-columns:1fr;} }
+.hero-actions{display:flex; gap:12px; margin-top:28px; flex-wrap:wrap;}
+.btn{
+  font-family:var(--sans); font-weight:700; font-size:14px; padding:13px 22px; border-radius:var(--radius);
+  cursor:pointer; border:1px solid transparent; transition:all .15s; letter-spacing:0.2px;
+}
+.btn-primary{ background:var(--copper); color:#12160f; }
+.btn-primary:hover{ background:var(--copper-bright); transform:translateY(-1px); }
+.btn-ghost{ background:transparent; color:var(--ink); border-color:var(--line); }
+.btn-ghost:hover{ border-color:var(--solder-bright); color:var(--solder-bright); }
+.btn-danger{background:var(--danger); color:#fff;}
+.btn-danger:hover{filter:brightness(1.1);}
+.btn:disabled{opacity:0.5; cursor:not-allowed;}
+
+.board{
+  aspect-ratio:1/1; border:1px solid var(--line); border-radius:6px; background:var(--surface);
+  position:relative; overflow:hidden; padding:22px;
+}
+.board svg{width:100%; height:100%;}
+
+/* ---------- Stat chips ---------- */
+.stat-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:28px 0;}
+@media(max-width:760px){ .stat-row{grid-template-columns:repeat(2,1fr);} }
+.stat-chip{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px 16px; position:relative;
+}
+.stat-chip:before, .stat-chip:after{
+  content:''; position:absolute; top:14px; bottom:14px; width:2px; background:var(--line);
+}
+.stat-chip:before{left:-2px;} .stat-chip:after{right:-2px;}
+.stat-chip .val{ font-family:var(--mono); font-weight:700; font-size:28px; color:var(--gold);}
+.stat-chip .lbl{ font-size:12px; color:var(--ink-dim); margin-top:4px; text-transform:uppercase; letter-spacing:0.5px;}
+
+/* ---------- Cards / sections ---------- */
+section{padding:44px 0; border-top:1px solid var(--line);}
+.grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:22px;}
+.grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px;}
+@media(max-width:760px){ .grid-3{grid-template-columns:1fr 1fr;} .grid-2{grid-template-columns:1fr;} }
+@media(max-width:520px){ .grid-3{grid-template-columns:1fr;} }
+.card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px;}
+.card .tag{font-family:var(--mono); font-size:11px; color:var(--copper-bright); letter-spacing:1px; text-transform:uppercase;}
+
+.item-list{list-style:none; margin-top:14px;}
+.item-list li{
+  padding:11px 0; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px;
+  font-size:14px; color:var(--ink);
+}
+.item-list li:last-child{border-bottom:none;}
+.item-list .dot{width:6px; height:6px; border-radius:50%; flex-shrink:0;}
+.dot-solder{background:var(--solder-bright);}
+.dot-copper{background:var(--copper);}
+.dot-danger{background:var(--danger);}
+
+/* ---------- Forms ---------- */
+.form-card{ background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:28px; margin-top:24px;}
+.field{margin-bottom:18px;}
+.field label{ display:block; font-size:13px; font-weight:600; margin-bottom:7px; color:var(--ink);}
+.field .hint{font-size:12px; color:var(--ink-faint); margin-top:5px;}
+.field input[type=text], .field input[type=tel], .field input[type=number], .field select, .field textarea{
+  width:100%; background:var(--surface-2); border:1px solid var(--line); color:var(--ink);
+  padding:11px 12px; border-radius:var(--radius); font-family:var(--sans); font-size:14px; transition:border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--solder-bright); }
+.field textarea{resize:vertical; min-height:80px;}
+.chip-options{display:flex; flex-wrap:wrap; gap:8px;}
+.chip-opt{
+  padding:9px 14px; border:1px solid var(--line); border-radius:20px; font-size:13px; cursor:pointer;
+  background:var(--surface-2); color:var(--ink-dim); transition:all .15s; user-select:none;
+}
+.chip-opt.selected{ background:var(--solder); border-color:var(--solder-bright); color:#fff; }
+.radio-row{display:flex; gap:10px; flex-wrap:wrap;}
+.radio-opt{
+  flex:1; min-width:90px; text-align:center; padding:10px 8px; border:1px solid var(--line); border-radius:var(--radius);
+  font-size:13px; cursor:pointer; background:var(--surface-2); color:var(--ink-dim);
+}
+.radio-opt.selected{ border-color:var(--gold); color:var(--gold); background:rgba(212,175,55,0.08);}
+.form-grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media(max-width:600px){ .form-grid-2{grid-template-columns:1fr;} }
+.form-note{ font-size:12px; color:var(--ink-faint); margin-top:16px; display:flex; gap:6px; align-items:flex-start;}
+.form-note.has-error{
+  background:rgba(196,87,63,0.12); border:1px solid var(--danger); border-radius:var(--radius);
+  padding:10px 12px; font-size:13px; color:var(--danger); font-weight:600;
+}
+.form-note.has-error span{color:var(--danger);}
+
+.success-box{
+  background:rgba(45,95,76,0.15); border:1px solid var(--solder-bright); border-radius:6px;
+  padding:22px; margin-top:24px; display:none;
+}
+.success-box.show{display:block;}
+.success-box .big{font-family:var(--mono); color:var(--solder-bright); font-weight:700; font-size:16px;}
+
+/* ---------- Do / Don't ---------- */
+.dd-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px;}
+@media(max-width:700px){ .dd-grid{grid-template-columns:1fr;} }
+.dd-card{border-radius:6px; padding:22px; border:1px solid var(--line);}
+.dd-card.dont{background:rgba(196,87,63,0.07); border-color:rgba(196,87,63,0.4);}
+.dd-card.do{background:rgba(45,95,76,0.10); border-color:rgba(63,138,108,0.4);}
+.dd-card h3{font-family:var(--mono); text-transform:uppercase; letter-spacing:1px; font-size:14px;}
+.dd-card.dont h3{color:var(--danger);}
+.dd-card.do h3{color:var(--solder-bright);}
+.dd-card ul{margin-top:12px; list-style:none;}
+.dd-card li{padding:8px 0; font-size:14px; color:var(--ink); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; gap:10px;}
+.dd-card li:last-child{border-bottom:none;}
+
+/* ---------- Device grid ---------- */
+.device-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:20px;}
+@media(max-width:700px){ .device-grid{grid-template-columns:repeat(2,1fr);} }
+.device-tile{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px 12px;
+  text-align:center; font-size:13px; color:var(--ink-dim); font-weight:500;
+}
+.device-tile .ic{font-family:var(--mono); font-size:20px; color:var(--gold); display:block; margin-bottom:8px;}
+
+/* ---------- Dashboard ---------- */
+.chart-card{ background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:20px; margin-top:16px;}
+.chart-card h3{font-family:var(--mono); font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--ink); font-weight:700;}
+.chart-box{position:relative; height:280px; margin-top:14px;}
+.chart-row{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media(max-width:800px){ .chart-row{grid-template-columns:1fr;} }
+
+/* ---------- Admin ---------- */
+.login-box{max-width:380px; margin:60px auto; background:var(--surface); border:1px solid var(--line); padding:32px; border-radius:6px;}
+.tab-bar{display:flex; gap:4px; border-bottom:1px solid var(--line); margin:24px 0; flex-wrap:wrap;}
+.tab-btn{ background:none; border:none; color:var(--ink-dim); padding:10px 16px; cursor:pointer; font-size:13px; font-weight:600; border-bottom:2px solid transparent;}
+.tab-btn.active{ color:var(--gold); border-bottom-color:var(--gold);}
+.admin-panel{display:none;}
+.admin-panel.active{display:block;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th{ text-align:left; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--copper-bright); padding:10px 8px; border-bottom:1px solid var(--line);}
+td{padding:10px 8px; border-bottom:1px solid var(--line); color:var(--ink-dim);}
+tr:hover td{color:var(--ink); background:rgba(255,255,255,0.02);}
+.table-wrap{overflow-x:auto; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:6px;}
+.badge{font-size:11px; padding:3px 8px; border-radius:10px; font-weight:600;}
+.badge-yes{background:rgba(63,138,108,0.2); color:var(--solder-bright);}
+.badge-no{background:rgba(196,87,63,0.2); color:var(--danger);}
+.empty-state{padding:40px 20px; text-align:center; color:var(--ink-faint); font-size:14px;}
+
+/* ---------- Flow diagram ---------- */
+.flow{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:18px; font-family:var(--mono); font-size:12px;}
+.flow-step{background:var(--surface-2); border:1px solid var(--line); padding:8px 12px; border-radius:3px; color:var(--ink-dim);}
+.flow-arrow{color:var(--copper);}
+
+footer{ border-top:1px solid var(--line); padding:36px 0 50px; margin-top:40px; color:var(--ink-faint); font-size:13px;}
+footer .foot-row{display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+
+.section-head{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-wrap">
+    <div class="brand">
+      <div class="chip"></div>
+      <div class="brand-name">Eco<span>Waste</span> Survey</div>
+    </div>
+    <nav id="mainNav">
+      <button data-view="home" class="active">Home</button>
+      <button data-view="survey">Take Survey</button>
+      <button data-view="results">Survey Results</button>
+      <button data-view="awareness">Awareness &amp; Tips</button>
+      <button data-view="collection">Collection Request</button>
+      <button data-view="admin">Admin</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ HOME ============ -->
+<div class="view active" id="view-home">
+  <div class="hero">
+    <div>
+      <div class="eyebrow">E-Waste Management Practices Survey</div>
+      <h1>Every discarded device<br>leaves a <em>circuit</em> unclosed.</h1>
+      <p class="lede">EcoWaste Survey collects real data on how people use, store, repair, and discard electronics — then turns it into a live picture of e-waste habits, awareness, and disposal behaviour.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="showView('survey')">Take the Survey →</button>
+        <button class="btn btn-ghost" onclick="showView('awareness')">Learn about e-waste</button>
+      </div>
+    </div>
+    <div class="board">
+      <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+        <g stroke="#2a3830" stroke-width="1" fill="none">
+          <path d="M20 60 H120 V20"/>
+          <path d="M20 140 H90 V220"/>
+          <path d="M20 260 H160 V180"/>
+          <path d="M280 40 H190 V100"/>
+          <path d="M280 150 H230 V60"/>
+          <path d="M280 250 H200 V160"/>
+          <path d="M120 20 H280 V150"/>
+        </g>
+        <g stroke="#3f8a6c" stroke-width="1.4" fill="none" opacity="0.85">
+          <path d="M150 150 H90 V220"/>
+          <path d="M150 150 V60 H190"/>
+          <path d="M150 150 H230 V160"/>
+        </g>
+        <circle cx="150" cy="150" r="34" fill="#161f1a" stroke="#c87f4a" stroke-width="1.5"/>
+        <text x="150" y="147" text-anchor="middle" fill="#d4af37" font-family="Space Mono" font-size="10">E-WASTE</text>
+        <text x="150" y="160" text-anchor="middle" fill="#93a49a" font-family="Space Mono" font-size="8">DATA HUB</text>
+        <g fill="#c87f4a">
+          <circle cx="20" cy="60" r="2.5"/><circle cx="20" cy="140" r="2.5"/><circle cx="20" cy="260" r="2.5"/>
+          <circle cx="280" cy="40" r="2.5"/><circle cx="280" cy="150" r="2.5"/><circle cx="280" cy="250" r="2.5"/>
+          <circle cx="90" cy="220" r="2.5"/><circle cx="230" cy="60" r="2.5"/><circle cx="200" cy="160" r="2.5"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <section>
+    <div class="eyebrow">What is e-waste</div>
+    <h2>Electronics don't disappear — they accumulate.</h2>
+    <p class="lede">E-waste is any discarded device with a plug, battery, or circuit board: phones, laptops, chargers, TVs, printers. When it's burned, buried, or dumped instead of processed properly, it leaches lead, mercury, and cadmium into soil and water — and the recoverable copper, gold, and rare-earth metals inside it are lost for good.</p>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="tag">01 · Scale</div>
+        <h3>It's the fastest-growing waste stream</h3>
+        <p>Every upgrade cycle — a new phone, a replaced router — adds to a pile that most municipal systems still aren't built to handle.</p>
+      </div>
+      <div class="card">
+        <div class="tag">02 · Risk</div>
+        <h3>Informal disposal is toxic</h3>
+        <p>Open burning to recover metal releases heavy metals and dioxins, harming the people doing the burning first.</p>
+      </div>
+      <div class="card">
+        <div class="tag">03 · Opportunity</div>
+        <h3>It's also a resource</h3>
+        <p>A tonne of circuit boards holds more gold than a tonne of ore. Proper recycling recovers material, not just removes waste.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Common e-waste items</div>
+        <h2>What actually counts as e-waste</h2>
+      </div>
+    </div>
+    <div class="device-grid">
+      <div class="device-tile"><span class="ic">▤</span>Mobile phones</div>
+      <div class="device-tile"><span class="ic">▥</span>Laptops</div>
+      <div class="device-tile"><span class="ic">▦</span>Desktops</div>
+      <div class="device-tile"><span class="ic">▧</span>Printers</div>
+      <div class="device-tile"><span class="ic">◫</span>Batteries</div>
+      <div class="device-tile"><span class="ic">▨</span>Chargers</div>
+      <div class="device-tile"><span class="ic">▩</span>Televisions</div>
+      <div class="device-tile"><span class="ic">⌨</span>Keyboards / mice</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Why this project exists</div>
+    <h2>Field research → data → action</h2>
+    <p class="lede" style="margin-bottom:6px;">This site is the instrument, not the endpoint. Responses collected here feed directly into the results dashboard, and are exportable for further analysis in Python and Pandas.</p>
+    <div class="flow">
+      <div class="flow-step">Field Visit</div><div class="flow-arrow">→</div>
+      <div class="flow-step">Survey Data</div><div class="flow-arrow">→</div>
+      <div class="flow-step">Database</div><div class="flow-arrow">→</div>
+      <div class="flow-step">Dashboard</div><div class="flow-arrow">→</div>
+      <div class="flow-step">Pandas Analysis</div><div class="flow-arrow">→</div>
+      <div class="flow-step">Final Report</div>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-primary" onclick="showView('survey')">Take Survey Button →</button>
+    </div>
+  </section>
+</div>
+
+<!-- ============ SURVEY ============ -->
+<div class="view" id="view-survey">
+  <section style="border-top:none; padding-top:40px;">
+    <div class="eyebrow">Main module</div>
+    <h2>E-Waste Practices Survey</h2>
+    <p>Takes about 2 minutes. Your response is added straight to the live results dashboard.</p>
+
+    <div class="form-card">
+      <form id="surveyForm">
+        <div class="form-grid-2">
+          <div class="field">
+            <label>Name (optional)</label>
+            <input type="text" id="s_name" placeholder="Leave blank to stay anonymous">
+          </div>
+          <div class="field">
+            <label>Age group *</label>
+            <select id="s_age">
+              <option value="">Select</option>
+              <option>Under 18</option><option>18–25</option><option>26–35</option>
+              <option>36–45</option><option>46–60</option><option>60+</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Occupation *</label>
+          <select id="s_occupation">
+            <option value="">Select</option>
+            <option>Student</option><option>IT / Tech professional</option><option>Business / Self-employed</option>
+            <option>Government employee</option><option>Homemaker</option><option>Retired</option><option>Other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Which electronic devices do you use? (select all that apply) *</label>
+          <div class="chip-options" id="s_devices">
+            <div class="chip-opt" data-v="Mobile phone">Mobile phone</div>
+            <div class="chip-opt" data-v="Laptop">Laptop</div>
+            <div class="chip-opt" data-v="Desktop computer">Desktop computer</div>
+            <div class="chip-opt" data-v="Printer">Printer</div>
+            <div class="chip-opt" data-v="Battery-powered device">Battery-powered device</div>
+            <div class="chip-opt" data-v="Charger / adapter">Charger / adapter</div>
+            <div class="chip-opt" data-v="Television">Television</div>
+            <div class="chip-opt" data-v="Keyboard / mouse">Keyboard / mouse</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>How many old / unused electronic devices do you currently have? *</label>
+          <div class="radio-row" id="s_count">
+            <div class="radio-opt" data-v="0">0</div>
+            <div class="radio-opt" data-v="1-2">1–2</div>
+            <div class="radio-opt" data-v="3-5">3–5</div>
+            <div class="radio-opt" data-v="6+">6+</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>What do you usually do with old electronics? *</label>
+          <select id="s_disposal">
+            <option value="">Select</option>
+            <option>Store them at home unused</option>
+            <option>Give to scrap dealer / kabadiwala</option>
+            <option>Give to authorized recycler</option>
+            <option>Donate or resell</option>
+            <option>Throw in regular household garbage</option>
+            <option>Burn or dump in open area</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Do you repair electronic devices instead of replacing them? *</label>
+          <div class="radio-row" id="s_repair">
+            <div class="radio-opt" data-v="Always">Always</div>
+            <div class="radio-opt" data-v="Sometimes">Sometimes</div>
+            <div class="radio-opt" data-v="Never">Never</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Do you recycle e-waste? *</label>
+          <div class="radio-row" id="s_recycle">
+            <div class="radio-opt" data-v="Yes">Yes</div>
+            <div class="radio-opt" data-v="No">No</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Do you know about authorized e-waste recyclers in your area? *</label>
+          <div class="radio-row" id="s_knowrecycler">
+            <div class="radio-opt" data-v="Yes">Yes</div>
+            <div class="radio-opt" data-v="No">No</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Are you aware of the environmental risks of improper e-waste disposal? *</label>
+          <div class="radio-row" id="s_aware">
+            <div class="radio-opt" data-v="Yes">Yes</div>
+            <div class="radio-opt" data-v="No">No</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Would you use a doorstep e-waste collection service if available? *</label>
+          <div class="radio-row" id="s_wouldusecollect">
+            <div class="radio-opt" data-v="Yes">Yes</div>
+            <div class="radio-opt" data-v="No">No</div>
+            <div class="radio-opt" data-v="Maybe">Maybe</div>
+          </div>
+        </div>
+
+        <div class="form-note" id="formErrorWrap" style="display:none;">⚠ <span id="formError"></span></div>
+        <div style="margin-top:18px; display:flex; gap:12px;">
+          <button type="submit" class="btn btn-primary" id="surveySubmitBtn">Submit Response</button>
+          <button type="button" class="btn btn-ghost" onclick="resetSurveyForm()">Clear form</button>
+        </div>
+      </form>
+
+      <div class="success-box" id="surveySuccess">
+        <div class="big">✓ Response recorded</div>
+        <p style="margin-top:6px;">Thanks — your answers were added to the dataset. <a href="#" onclick="showView('results'); return false;" style="color:var(--gold);">See the live results dashboard →</a></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ RESULTS ============ -->
+<div class="view" id="view-results">
+  <section style="border-top:none; padding-top:40px;">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Computer science component</div>
+        <h2>Survey Results Dashboard</h2>
+        <p>Auto-generated from every response submitted so far — including yours.</p>
+      </div>
+    </div>
+
+    <div class="stat-row" id="statRow"></div>
+
+    <div class="chart-row">
+      <div class="chart-card"><h3>Disposal Methods</h3><div class="chart-box"><canvas id="chartDisposal"></canvas></div></div>
+      <div class="chart-card"><h3>Awareness of Environmental Risk</h3><div class="chart-box"><canvas id="chartAwareness"></canvas></div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-card"><h3>Most Common Devices Owned</h3><div class="chart-box"><canvas id="chartDevices"></canvas></div></div>
+      <div class="chart-card"><h3>Recycling Behaviour</h3><div class="chart-box"><canvas id="chartRecycle"></canvas></div></div>
+    </div>
+    <div class="chart-card"><h3>Responses by Age Group</h3><div class="chart-box"><canvas id="chartAge"></canvas></div></div>
+  </section>
+</div>
+
+<!-- ============ AWARENESS ============ -->
+<div class="view" id="view-awareness">
+  <section style="border-top:none; padding-top:40px;">
+    <div class="eyebrow">What is e-waste</div>
+    <h2>Electronic waste, defined</h2>
+    <p class="lede">Any device that runs on electricity or a battery becomes e-waste the moment it's discarded — regardless of whether it still works.</p>
+    <div class="device-grid" style="margin-top:24px;">
+      <div class="device-tile"><span class="ic">▤</span>Mobile phones</div>
+      <div class="device-tile"><span class="ic">▦</span>Computers</div>
+      <div class="device-tile"><span class="ic">▥</span>Laptops</div>
+      <div class="device-tile"><span class="ic">▧</span>Printers</div>
+      <div class="device-tile"><span class="ic">◫</span>Batteries</div>
+      <div class="device-tile"><span class="ic">▨</span>Chargers</div>
+      <div class="device-tile"><span class="ic">▩</span>TVs</div>
+      <div class="device-tile"><span class="ic">⌨</span>Keyboards / mice</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Disposal guidance</div>
+    <h2>What to do — and what not to do</h2>
+    <div class="dd-grid">
+      <div class="dd-card dont">
+        <h3>✕ Don't</h3>
+        <ul>
+          <li><span>🔥</span> Burn electronics to recover metal — releases toxic fumes.</li>
+          <li><span>🔋</span> Throw batteries into normal household garbage.</li>
+          <li><span>🗑</span> Dump electronics in open areas, drains, or landfills.</li>
+          <li><span>🔨</span> Manually break open devices for parts without protection.</li>
+        </ul>
+      </div>
+      <div class="dd-card do">
+        <h3>✓ Do</h3>
+        <ul>
+          <li><span>🛠</span> Repair devices before replacing them.</li>
+          <li><span>♻</span> Reuse or repurpose working components.</li>
+          <li><span>🎁</span> Donate devices that still function.</li>
+          <li><span>🏷</span> Sell responsibly through verified refurbishers.</li>
+          <li><span>✅</span> Hand e-waste to authorized recycling channels.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Take action</div>
+    <h2>Have e-waste sitting at home?</h2>
+    <p class="lede">Request a collection instead of letting it pile up in a drawer.</p>
+    <div class="hero-actions"><button class="btn btn-primary" onclick="showView('collection')">Request Collection →</button></div>
+  </section>
+</div>
+
+<!-- ============ COLLECTION REQUEST ============ -->
+<div class="view" id="view-collection">
+  <section style="border-top:none; padding-top:40px;">
+    <div class="eyebrow">Practical module</div>
+    <h2>E-Waste Collection Request</h2>
+    <p>Tell us what you have, and whether you'd like it picked up. Example: "I have 2 old laptops and 3 mobile phones that I want to recycle."</p>
+
+    <div class="form-card">
+      <form id="collectionForm">
+        <div class="form-grid-2">
+          <div class="field"><label>Name *</label><input type="text" id="c_name"></div>
+          <div class="field"><label>Mobile number *</label><input type="tel" id="c_mobile" placeholder="+91 XXXXXXXXXX"></div>
+        </div>
+        <div class="form-grid-2">
+          <div class="field"><label>Area / locality *</label><input type="text" id="c_area"></div>
+          <div class="field">
+            <label>E-waste type *</label>
+            <select id="c_type">
+              <option value="">Select</option>
+              <option>Mobile phones</option><option>Laptops / computers</option><option>TVs</option>
+              <option>Batteries</option><option>Printers</option><option>Chargers / cables</option><option>Mixed items</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="field"><label>Quantity *</label><input type="text" id="c_qty" placeholder="e.g. 2 laptops, 3 phones"></div>
+          <div class="field">
+            <label>Pickup required? *</label>
+            <div class="radio-row" id="c_pickup">
+              <div class="radio-opt" data-v="Yes">Yes</div>
+              <div class="radio-opt" data-v="No, I'll drop off">No, I'll drop off</div>
+            </div>
+          </div>
+        </div>
+        <div class="field"><label>Message</label><textarea id="c_message" placeholder="Any extra detail — condition of items, best time to reach you, etc."></textarea></div>
+        <div class="form-note" id="collectionErrorWrap" style="display:none;">⚠ <span id="collectionError"></span></div>
+        <div style="margin-top:18px;"><button type="submit" class="btn btn-primary" id="collectionSubmitBtn">Submit Request</button></div>
+      </form>
+      <div class="success-box" id="collectionSuccess">
+        <div class="big">✓ Request received</div>
+        <p style="margin-top:6px;">Your collection request has been logged and will appear in the admin dashboard.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ ADMIN ============ -->
+<div class="view" id="view-admin">
+  <div id="adminLoginWrap">
+    <div class="login-box">
+      <div class="eyebrow">Restricted</div>
+      <h2>Admin Login</h2>
+      <p style="margin-top:10px;">Demo credentials — <strong style="color:var(--ink);">admin / admin123</strong></p>
+      <div class="field" style="margin-top:18px;"><label>Username</label><input type="text" id="adminUser"></div>
+      <div class="field"><label>Password</label><input type="text" id="adminPass"></div>
+      <div class="form-note">⚠ <span id="adminError" style="color:var(--danger);"></span></div>
+      <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="adminLogin()">Log in</button>
+    </div>
+  </div>
+
+  <div id="adminDashboard" style="display:none;">
+    <section style="border-top:none; padding-top:40px;">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Admin dashboard</div>
+          <h2>EcoWaste Control Panel</h2>
+        </div>
+        <button class="btn btn-ghost" onclick="adminLogout()">Log out</button>
+      </div>
+
+      <div class="stat-row" id="adminStatRow"></div>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="responses">Survey Responses</button>
+        <button class="tab-btn" data-tab="requests">Collection Requests</button>
+        <button class="tab-btn" data-tab="categories">E-Waste Categories</button>
+        <button class="tab-btn" data-tab="export">Export Data</button>
+      </div>
+
+      <div class="admin-panel active" id="panel-responses">
+        <div class="table-wrap"><table id="tblResponses"><thead></thead><tbody></tbody></table></div>
+      </div>
+      <div class="admin-panel" id="panel-requests">
+        <div class="table-wrap"><table id="tblRequests"><thead></thead><tbody></tbody></table></div>
+      </div>
+      <div class="admin-panel" id="panel-categories">
+        <div class="chart-card"><h3>Device Category Breakdown</h3><div class="chart-box"><canvas id="chartAdminCat"></canvas></div></div>
+      </div>
+      <div class="admin-panel" id="panel-export">
+        <div class="card">
+          <div class="tag">CSV Export</div>
+          <h3 style="margin-top:8px;">Download raw data for Python / Pandas analysis</h3>
+          <p style="margin-bottom:16px;">Exports every stored record as a flat CSV — ready for <code>pandas.read_csv()</code>.</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="exportCSV('responses')">📥 Download Survey Responses (CSV)</button>
+            <button class="btn btn-primary" onclick="exportCSV('requests')">📥 Download Collection Requests (CSV)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <div class="foot-row">
+    <div>EcoWaste Survey — E-Waste Management Practices Survey project.</div>
+    <div>Data stored for this session only · Not a real recycling service</div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+let responses = [];
+let collectionRequests = [];
+let charts = {};
+const DEVICES = ["Mobile phone","Laptop","Desktop computer","Printer","Battery-powered device","Charger / adapter","Television","Keyboard / mouse"];
+const AGE_GROUPS = ["Under 18","18–25","26–35","36–45","46–60","60+"];
+
+/* ---------- seeded synthetic dataset (field-survey stand-in) ---------- */
+function seededRandom(seed){ let s = seed; return function(){ s = (s*9301+49297)%233280; return s/233280; }; }
+function weightedPick(rng, opts){ // opts: [[value, weight], ...]
+  const total = opts.reduce((a,o)=>a+o[1],0);
+  let r = rng()*total;
+  for(const [v,w] of opts){ r -= w; if(r<=0) return v; }
+  return opts[opts.length-1][0];
+}
+function generateSeedData(n){
+  const rng = seededRandom(42);
+  const occupations = ["Student","IT / Tech professional","Business / Self-employed","Government employee","Homemaker","Retired","Other"];
+  const disposalOpts = [["Store them at home unused",34],["Give to scrap dealer / kabadiwala",26],["Give to authorized recycler",18],["Donate or resell",14],["Throw in regular household garbage",18],["Burn or dump in open area",8]];
+  const firstNames = ["Aarav","Vivaan","Aditya","Vihaan","Arjun","Reyansh","Krishna","Ishaan","Rohan","Kabir",
+    "Ananya","Diya","Saanvi","Aadhya","Myra","Isha","Kavya","Riya","Anika","Sara",
+    "Rahul","Karan","Nikhil","Amit","Suresh","Ramesh","Sanjay","Vikram","Manoj","Deepak",
+    "Priya","Neha","Pooja","Shreya","Divya","Meera","Kritika","Nisha","Swati","Preeti",
+    "Aryan","Yash","Dhruv","Siddharth","Varun","Farhan","Imran","Zoya","Fatima","Ayesha"];
+  const lastNames = ["Sharma","Verma","Gupta","Patel","Iyer","Nair","Reddy","Rao","Kulkarni","Deshmukh",
+    "Kumar","Singh","Mehta","Shah","Joshi","Chavan","Pillai","Menon","Bhatt","Agarwal",
+    "Kapoor","Malhotra","Chopra","Bose","Das","Sinha","Pandey","Mishra","Trivedi","Naik"];
+  const out=[];
+  for(let i=0;i<n;i++){
+    const age = weightedPick(rng, AGE_GROUPS.map((a,idx)=>[a, [8,30,26,18,12,6][idx]]));
+    const devices = DEVICES.filter(()=>rng() < (age==="Under 18"?0.35:0.55));
+    if(devices.length===0) devices.push("Mobile phone");
+    const aware = rng() < 0.74;
+    const recycle = rng() < 0.41;
+    const repair = weightedPick(rng, [["Always",18],["Sometimes",47],["Never",35]]);
+    const fullName = firstNames[Math.floor(rng()*firstNames.length)]+" "+lastNames[Math.floor(rng()*lastNames.length)];
+    out.push({
+      id: 'seed_'+i,
+      name: fullName, anonymous:false,
+      age, occupation: occupations[Math.floor(rng()*occupations.length)],
+      devices, deviceCount: weightedPick(rng,[["0",10],["1-2",42],["3-5",34],["6+",14]]),
+      disposal: weightedPick(rng, disposalOpts),
+      repair, recycle: recycle?"Yes":"No",
+      knowRecycler: rng()<0.52 ? "Yes":"No",
+      aware: aware?"Yes":"No",
+      wouldUseCollection: weightedPick(rng,[["Yes",47],["No",18],["Maybe",35]]),
+      timestamp: new Date(Date.now() - Math.floor(rng()*90)*86400000).toISOString()
+    });
+  }
+  return out;
+}
+
+/* ============================================================
+   PERSISTENCE (window.storage, falls back to in-memory)
+   ============================================================ */
+async function loadData(){
+  let storedResponses = [], storedRequests = [];
+  try{
+    const r = await window.storage.get('survey_responses', true);
+    storedResponses = r ? JSON.parse(r.value) : [];
+  }catch(e){ storedResponses = []; }
+  try{
+    const r = await window.storage.get('collection_requests', true);
+    storedRequests = r ? JSON.parse(r.value) : [];
+  }catch(e){ storedRequests = []; }
+
+  responses = [...generateSeedData(55), ...storedResponses];
+  collectionRequests = storedRequests;
+  renderAll();
+}
+async function saveResponses(){
+  const userOnly = responses.filter(r => !r.id.startsWith('seed_'));
+  try{ await window.storage.set('survey_responses', JSON.stringify(userOnly), true); }catch(e){}
+}
+async function saveRequests(){
+  try{ await window.storage.set('collection_requests', JSON.stringify(collectionRequests), true); }catch(e){}
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('#mainNav button').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+  if(name==='results') renderCharts();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+document.getElementById('mainNav').addEventListener('click', e=>{
+  if(e.target.tagName==='BUTTON') showView(e.target.dataset.view);
+});
+
+/* ============================================================
+   CHIP / RADIO SELECT HELPERS
+   ============================================================ */
+function initChipGroup(id, multi){
+  const el = document.getElementById(id);
+  el.querySelectorAll('.chip-opt, .radio-opt').forEach(opt=>{
+    opt.addEventListener('click', ()=>{
+      if(multi){ opt.classList.toggle('selected'); }
+      else{ el.querySelectorAll('.radio-opt').forEach(o=>o.classList.remove('selected')); opt.classList.add('selected'); }
+    });
+  });
+}
+function getSelected(id, multi){
+  const el = document.getElementById(id);
+  const sel = [...el.querySelectorAll('.selected')].map(o=>o.dataset.v);
+  return multi ? sel : (sel[0]||"");
+}
+['s_devices'].forEach(id=>initChipGroup(id,true));
+['s_count','s_repair','s_recycle','s_knowrecycler','s_aware','s_wouldusecollect','c_pickup'].forEach(id=>initChipGroup(id,false));
+
+/* ============================================================
+   SURVEY SUBMIT
+   ============================================================ */
+function showFormError(wrapId, elId, msg){
+  const wrap = document.getElementById(wrapId);
+  document.getElementById(elId).textContent = msg;
+  wrap.style.display = 'flex';
+  wrap.classList.add('has-error');
+  if(typeof wrap.scrollIntoView === 'function'){
+    wrap.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+function clearFormError(wrapId, elId){
+  document.getElementById(elId).textContent = '';
+  const wrap = document.getElementById(wrapId);
+  wrap.style.display = 'none';
+  wrap.classList.remove('has-error');
+}
+// Guards against a storage call that never resolves (e.g. running outside
+// an environment that implements window.storage) so the UI never hangs.
+function withTimeout(promise, ms){
+  return Promise.race([
+    promise,
+    new Promise(resolve=> setTimeout(()=>resolve(null), ms))
+  ]);
+}
+
+document.getElementById('surveyForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const devices = getSelected('s_devices', true);
+  const count = getSelected('s_count', false);
+  const repair = getSelected('s_repair', false);
+  const recycle = getSelected('s_recycle', false);
+  const knowRecycler = getSelected('s_knowrecycler', false);
+  const aware = getSelected('s_aware', false);
+  const wouldUse = getSelected('s_wouldusecollect', false);
+  const age = document.getElementById('s_age').value;
+  const occupation = document.getElementById('s_occupation').value;
+  const disposal = document.getElementById('s_disposal').value;
+
+  if(!age||!occupation||!disposal||devices.length===0||!count||!repair||!recycle||!knowRecycler||!aware||!wouldUse){
+    showFormError('formErrorWrap','formError',"Please complete all required fields before submitting — check every question above, including the button-style choices.");
+    return;
+  }
+  clearFormError('formErrorWrap','formError');
+
+  const btn = document.getElementById('surveySubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+  try{
+    const name = document.getElementById('s_name').value.trim();
+    responses.push({
+      id:'u_'+Date.now(), name: name||"", anonymous: !name,
+      age, occupation, devices, deviceCount:count, disposal, repair, recycle,
+      knowRecycler, aware, wouldUseCollection: wouldUse, timestamp: new Date().toISOString()
+    });
+    await withTimeout(saveResponses(), 4000);
+    document.getElementById('surveyForm').style.display='none';
+    document.getElementById('surveySuccess').classList.add('show');
+    try{ renderAll(); }catch(err){ console.error('renderAll failed:', err); }
+  }catch(err){
+    console.error('Survey submit failed:', err);
+    showFormError('formErrorWrap','formError',"Something went wrong submitting your response. Please try again.");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Submit Response';
+  }
+});
+function resetSurveyForm(){
+  document.getElementById('surveyForm').reset();
+  document.querySelectorAll('#view-survey .selected').forEach(o=>o.classList.remove('selected'));
+}
+
+/* ============================================================
+   COLLECTION REQUEST SUBMIT
+   ============================================================ */
+document.getElementById('collectionForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const pickup = getSelected('c_pickup', false);
+  const name=document.getElementById('c_name').value.trim();
+  const mobile=document.getElementById('c_mobile').value.trim();
+  const area=document.getElementById('c_area').value.trim();
+  const type=document.getElementById('c_type').value;
+  const qty=document.getElementById('c_qty').value.trim();
+  const message=document.getElementById('c_message').value.trim();
+
+  if(!name||!mobile||!area||!type||!qty||!pickup){
+    showFormError('collectionErrorWrap','collectionError',"Please complete all required fields before submitting.");
+    return;
+  }
+  clearFormError('collectionErrorWrap','collectionError');
+
+  const btn = document.getElementById('collectionSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+  try{
+    collectionRequests.push({ id:'r_'+Date.now(), name, mobile, area, type, qty, pickup, message, timestamp:new Date().toISOString() });
+    await withTimeout(saveRequests(), 4000);
+    document.getElementById('collectionForm').style.display='none';
+    document.getElementById('collectionSuccess').classList.add('show');
+    try{ renderAll(); }catch(err){ console.error('renderAll failed:', err); }
+  }catch(err){
+    console.error('Collection request submit failed:', err);
+    showFormError('collectionErrorWrap','collectionError',"Something went wrong submitting your request. Please try again.");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Submit Request';
+  }
+});
+
+/* ============================================================
+   AGGREGATION
+   ============================================================ */
+function computeStats(){
+  const total = responses.length;
+  const aware = responses.filter(r=>r.aware==="Yes").length;
+  const recycle = responses.filter(r=>r.recycle==="Yes").length;
+  const reuseRepair = responses.filter(r=>r.repair==="Always"||r.repair==="Sometimes").length;
+  const improper = responses.filter(r=>r.disposal==="Throw in regular household garbage"||r.disposal==="Burn or dump in open area").length;
+  return {total, aware, recycle, reuseRepair, improper};
+}
+function countBy(arr, keyFn){
+  const m={};
+  arr.forEach(item=>{ const k=keyFn(item); if(k===undefined||k===null||k==="") return; m[k]=(m[k]||0)+1; });
+  return m;
+}
+function countDevices(){
+  const m={}; DEVICES.forEach(d=>m[d]=0);
+  responses.forEach(r=> (r.devices||[]).forEach(d=> m[d]=(m[d]||0)+1));
+  return m;
+}
+
+/* ============================================================
+   RENDER: STATS + CHARTS (public results page)
+   ============================================================ */
+function renderAll(){
+  renderStatRow();
+  try{ renderCharts(); }catch(err){ console.error('Chart rendering failed (charts may be blocked on this network):', err); }
+  renderAdminStats();
+  renderAdminTables();
+}
+function renderStatRow(){
+  const s = computeStats();
+  const rows = [
+    ["Total Responses", s.total],
+    ["Aware of E-Waste", s.aware],
+    ["Recycle E-Waste", s.recycle],
+    ["Reuse / Repair", s.reuseRepair],
+    ["Improper Disposal", s.improper],
+  ];
+  document.getElementById('statRow').innerHTML = rows.map(([l,v])=>`
+    <div class="stat-chip"><div class="val">${v}</div><div class="lbl">${l}</div></div>`).join('');
+}
+
+const CH_COLORS = {solder:'#3f8a6c', copper:'#c87f4a', gold:'#d4af37', danger:'#c4573f', dim:'#5d6d64', ink:'#ecece2'};
+function baseOpts(extra){
+  return Object.assign({
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{labels:{color:'#93a49a', font:{family:'Inter', size:11}}} },
+    scales:{
+      x:{ ticks:{color:'#93a49a', font:{size:10}}, grid:{color:'#2a3830'} },
+      y:{ ticks:{color:'#93a49a', font:{size:10}}, grid:{color:'#2a3830'}, beginAtZero:true }
+    }
+  }, extra||{});
+}
+function destroyChart(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } }
+
+function renderCharts(){
+  // Disposal methods
+  const disposalCounts = countBy(responses, r=>r.disposal);
+  destroyChart('disposal');
+  charts.disposal = new Chart(document.getElementById('chartDisposal'), {
+    type:'bar',
+    data:{ labels:Object.keys(disposalCounts), datasets:[{ data:Object.values(disposalCounts), backgroundColor:CH_COLORS.copper, borderRadius:2 }]},
+    options: baseOpts({ plugins:{legend:{display:false}}, indexAxis:'y' })
+  });
+
+  // Awareness pie
+  const s = computeStats();
+  destroyChart('awareness');
+  charts.awareness = new Chart(document.getElementById('chartAwareness'), {
+    type:'doughnut',
+    data:{ labels:['Aware','Not aware'], datasets:[{ data:[s.aware, s.total-s.aware], backgroundColor:[CH_COLORS.solder, CH_COLORS.danger], borderColor:'#161f1a', borderWidth:2 }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#93a49a'}}} }
+  });
+
+  // Devices
+  const deviceCounts = countDevices();
+  destroyChart('devices');
+  charts.devices = new Chart(document.getElementById('chartDevices'), {
+    type:'bar',
+    data:{ labels:Object.keys(deviceCounts), datasets:[{ data:Object.values(deviceCounts), backgroundColor:CH_COLORS.gold, borderRadius:2 }]},
+    options: baseOpts({ plugins:{legend:{display:false}} })
+  });
+
+  // Recycling behaviour
+  const recycleCounts = countBy(responses, r=>r.recycle);
+  destroyChart('recycle');
+  charts.recycle = new Chart(document.getElementById('chartRecycle'), {
+    type:'bar',
+    data:{ labels:Object.keys(recycleCounts), datasets:[{ data:Object.values(recycleCounts), backgroundColor:[CH_COLORS.solder, CH_COLORS.danger], borderRadius:2 }]},
+    options: baseOpts({ plugins:{legend:{display:false}} })
+  });
+
+  // Age group
+  const ageCounts = {}; AGE_GROUPS.forEach(a=>ageCounts[a]=0);
+  responses.forEach(r=> ageCounts[r.age]=(ageCounts[r.age]||0)+1 );
+  destroyChart('age');
+  charts.age = new Chart(document.getElementById('chartAge'), {
+    type:'line',
+    data:{ labels:Object.keys(ageCounts), datasets:[{ data:Object.values(ageCounts), borderColor:CH_COLORS.copper, backgroundColor:'rgba(200,127,74,0.15)', fill:true, tension:0.35, pointBackgroundColor:CH_COLORS.gold }]},
+    options: baseOpts({ plugins:{legend:{display:false}} })
+  });
+}
+
+/* ============================================================
+   ADMIN
+   ============================================================ */
+function adminLogin(){
+  const u = document.getElementById('adminUser').value.trim();
+  const p = document.getElementById('adminPass').value.trim();
+  if(u==='admin' && p==='admin123'){
+    document.getElementById('adminLoginWrap').style.display='none';
+    document.getElementById('adminDashboard').style.display='block';
+    renderAdminStats(); renderAdminTables(); try{ renderAdminChart(); }catch(err){ console.error('Admin chart rendering failed:', err); }
+  }else{
+    document.getElementById('adminError').textContent = "Incorrect username or password.";
+  }
+}
+function adminLogout(){
+  document.getElementById('adminLoginWrap').style.display='block';
+  document.getElementById('adminDashboard').style.display='none';
+  document.getElementById('adminUser').value=''; document.getElementById('adminPass').value='';
+}
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='categories') renderAdminChart();
+  });
+});
+function renderAdminStats(){
+  const s = computeStats();
+  const rows = [["Survey Responses", s.total],["Collection Requests", collectionRequests.length],["Aware of E-Waste", s.aware],["Recycling", s.recycle]];
+  document.getElementById('adminStatRow').innerHTML = rows.map(([l,v])=>`
+    <div class="stat-chip"><div class="val">${v}</div><div class="lbl">${l}</div></div>`).join('');
+}
+function renderAdminTables(){
+  // Responses table
+  const rHead = ['#','Name','Age','Occupation','Devices','Disposal','Recycles?','Aware?','Submitted'];
+  const respRows = [...responses].reverse().slice(0,300);
+  document.getElementById('tblResponses').querySelector('thead').innerHTML = '<tr>'+rHead.map(h=>`<th>${h}</th>`).join('')+'</tr>';
+  document.getElementById('tblResponses').querySelector('tbody').innerHTML = respRows.length ? respRows.map((r,i)=>`
+    <tr>
+      <td>${responses.length-i}</td>
+      <td>${r.anonymous?'<em style="color:var(--ink-faint)">Anonymous</em>':escapeHtml(r.name)}</td>
+      <td>${r.age}</td><td>${r.occupation}</td>
+      <td>${(r.devices||[]).slice(0,2).join(', ')}${(r.devices||[]).length>2?' +'+((r.devices.length)-2):''}</td>
+      <td>${r.disposal}</td>
+      <td><span class="badge ${r.recycle==='Yes'?'badge-yes':'badge-no'}">${r.recycle}</span></td>
+      <td><span class="badge ${r.aware==='Yes'?'badge-yes':'badge-no'}">${r.aware}</span></td>
+      <td>${new Date(r.timestamp).toLocaleDateString()}</td>
+    </tr>`).join('') : `<tr><td colspan="9" class="empty-state">No responses yet.</td></tr>`;
+
+  // Requests table
+  const cHead = ['#','Name','Mobile','Area','Type','Qty','Pickup','Message','Submitted'];
+  const reqRows = [...collectionRequests].reverse();
+  document.getElementById('tblRequests').querySelector('thead').innerHTML = '<tr>'+cHead.map(h=>`<th>${h}</th>`).join('')+'</tr>';
+  document.getElementById('tblRequests').querySelector('tbody').innerHTML = reqRows.length ? reqRows.map((r,i)=>`
+    <tr>
+      <td>${reqRows.length-i}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.mobile)}</td>
+      <td>${escapeHtml(r.area)}</td><td>${escapeHtml(r.type)}</td><td>${escapeHtml(r.qty)}</td>
+      <td><span class="badge ${r.pickup==='Yes'?'badge-yes':'badge-no'}">${r.pickup}</span></td>
+      <td>${escapeHtml(r.message||'—')}</td><td>${new Date(r.timestamp).toLocaleDateString()}</td>
+    </tr>`).join('') : `<tr><td colspan="9" class="empty-state">No collection requests yet. Submissions from the "Collection Request" page will appear here.</td></tr>`;
+}
+function renderAdminChart(){
+  const deviceCounts = countDevices();
+  destroyChart('adminCat');
+  charts.adminCat = new Chart(document.getElementById('chartAdminCat'), {
+    type:'polarArea',
+    data:{ labels:Object.keys(deviceCounts), datasets:[{ data:Object.values(deviceCounts),
+      backgroundColor:['#3f8a6c99','#c87f4a99','#d4af3799','#c4573f99','#2d5f4c99','#93a49a99','#e0985f99','#5d6d6499'] }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{color:'#93a49a', font:{size:10}}}}, scales:{r:{ticks:{display:false}, grid:{color:'#2a3830'}}} }
+  });
+}
+function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* ============================================================
+   CSV EXPORT
+   ============================================================ */
+function toCSV(rows, headers){
+  const esc = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const lines = [headers.map(esc).join(',')];
+  rows.forEach(r=> lines.push(headers.map(h=>esc(r[h])).join(',')) );
+  return lines.join('\n');
+}
+function downloadBlob(content, filename){
+  const blob = new Blob([content], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function exportCSV(kind){
+  if(kind==='responses'){
+    const flat = responses.map(r=>({
+      id:r.id, name:r.anonymous?'Anonymous':r.name, age_group:r.age, occupation:r.occupation,
+      devices:(r.devices||[]).join('; '), device_count:r.deviceCount, disposal_method:r.disposal,
+      repairs:r.repair, recycles:r.recycle, knows_authorized_recycler:r.knowRecycler,
+      aware_of_risks:r.aware, would_use_collection:r.wouldUseCollection, submitted_at:r.timestamp
+    }));
+    downloadBlob(toCSV(flat, Object.keys(flat[0]||{id:''})), 'ecowaste_survey_responses.csv');
+  }else{
+    const flat = collectionRequests.map(r=>({
+      id:r.id, name:r.name, mobile:r.mobile, area:r.area, ewaste_type:r.type, quantity:r.qty,
+      pickup_required:r.pickup, message:r.message, submitted_at:r.timestamp
+    }));
+    downloadBlob(toCSV(flat, Object.keys(flat[0]||{id:''})), 'ecowaste_collection_requests.csv');
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+loadData();
+</script>
+</body>
+</html>
